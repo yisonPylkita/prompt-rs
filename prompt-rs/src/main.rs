@@ -54,6 +54,16 @@ fn get_current_working_directory_path() -> String {
         .to_string()
 }
 
+fn get_git_current_branch() -> String {
+    git2::Repository::open(".")
+        .unwrap()
+        .head()
+        .unwrap()
+        .shorthand()
+        .unwrap()
+        .to_string()
+}
+
 fn main() {
     let opt = Opt::from_args();
 
@@ -68,7 +78,9 @@ fn main() {
     ));
     prompt.push_str(" ");
     prompt.push_str(&get_current_working_directory_path());
-    prompt.push_str(" >");
+    prompt.push_str(" | ");
+    prompt.push_str(&get_git_current_branch());
+    prompt.push_str(" | > ");
 
     print!("{}", prompt);
 }

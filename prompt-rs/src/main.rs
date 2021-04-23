@@ -54,7 +54,7 @@ fn get_current_working_directory_path() -> String {
         .to_string()
 }
 
-fn get_git_current_branch() -> String {
+fn get_git_current_branch_from_libgit2() -> String {
     git2::Repository::open(".")
         .unwrap()
         .head()
@@ -64,7 +64,36 @@ fn get_git_current_branch() -> String {
         .to_string()
 }
 
+fn get_git_current_branch_from_git_process() {
+    let git_process = std::process::Command::new("/usr/bin/git")
+        .arg("branch")
+        .arg("--show-current")
+        .spawn()
+        .unwrap();
+    let _ = git_process.wait_with_output().unwrap();
+}
+
 fn main() {
+    /// libgit2 test
+    let start_time = std::time::Instant::now();
+    let _ = get_git_current_branch_from_libgit2();
+    println!(
+        "git branch --show-current equivalent in libgit2 took {}us",
+        std::time::Instant::now()
+            .duration_since(start_time)
+            .as_micros()
+    );
+
+    /// git process test
+    let start_time = std::time::Instant::now();
+    let _ = get_git_current_branch_from_git_process();
+    println!(
+        "git branch --show-current as new process took {}us",
+        std::time::Instant::now()
+            .duration_since(start_time)
+            .as_micros()
+    );
+
     let opt = Opt::from_args();
 
     let mut prompt = String::with_capacity(PROMPT_CAPACITY);
@@ -79,7 +108,7 @@ fn main() {
     prompt.push_str(" ");
     prompt.push_str(&get_current_working_directory_path());
     prompt.push_str(" | ");
-    prompt.push_str(&get_git_current_branch());
+    prompt.push_str(&get_git_current_branch_from_libgit2());
     prompt.push_str(" | > ");
 
     print!("{}", prompt);

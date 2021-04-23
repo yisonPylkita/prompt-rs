@@ -2,7 +2,7 @@
 Shell prompt generator in Rust
 
 ### Why?
-I want to see how fast it takes for bash to run Rust app that generates shell
+I want to see how long it takes for bash to run Rust app that generates shell
 prompt compared to writing same prompt generator function in shell (I'll test on
 ZSH)
 

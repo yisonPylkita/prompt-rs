@@ -64,13 +64,17 @@ fn get_git_current_branch_from_libgit2() -> String {
         .to_string()
 }
 
-fn get_git_current_branch_from_git_process() {
-    let git_process = std::process::Command::new("/usr/bin/git")
-        .arg("branch")
-        .arg("--show-current")
-        .spawn()
-        .unwrap();
-    let _ = git_process.wait_with_output().unwrap();
+fn get_git_current_branch_from_git_process() -> String {
+    std::str::from_utf8(
+        &std::process::Command::new("/usr/bin/git")
+            .arg("branch")
+            .arg("--show-current")
+            .output()
+            .unwrap()
+            .stdout,
+    )
+    .unwrap()
+    .to_string()
 }
 
 fn main() {

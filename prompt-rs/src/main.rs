@@ -1,6 +1,14 @@
 use chrono::prelude::*;
 use std::ffi::OsString;
 
+use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+struct Opt {
+    #[structopt(long)]
+    error: i32,
+}
+
 const PROMPT_CAPACITY: usize = 256;
 
 type ShellColor = str;
@@ -32,7 +40,13 @@ fn get_current_working_directory_path() -> String {
 }
 
 fn main() {
+    let opt = Opt::from_args();
+
     let mut prompt = String::with_capacity(PROMPT_CAPACITY);
+    prompt.push('[');
+    prompt.push_str(&opt.error.to_string());
+    prompt.push(']');
+    prompt.push(' ');
     prompt.push_str(&get_utc_time());
     prompt.push_str(" ");
     prompt.push_str(&with_color(

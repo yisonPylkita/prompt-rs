@@ -18,3 +18,8 @@ ZSH)
 # 2. Run generator and store its result as ENV string
 # 3. Print execution time with microseconds precision
 ```
+
+### How to run
+```bash
+echo "$(cargo run)"
+```

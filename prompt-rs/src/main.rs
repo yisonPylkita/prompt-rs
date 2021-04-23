@@ -23,6 +23,21 @@ fn with_color(input: String, color: &ShellColor) -> String {
     result
 }
 
+fn render_last_error_code(error_code: i32) -> String {
+    let mut result = String::new();
+    if error_code != 0 {
+        result.push_str("%K{red}");
+    }
+    result.push('[');
+    result.push_str(&error_code.to_string());
+    result.push(']');
+    if error_code != 0 {
+        result.push_str("%k");
+    }
+
+    result
+}
+
 fn get_utc_time() -> String {
     Local::now().format("%H:%M:%S").to_string()
 }
@@ -43,9 +58,7 @@ fn main() {
     let opt = Opt::from_args();
 
     let mut prompt = String::with_capacity(PROMPT_CAPACITY);
-    prompt.push('[');
-    prompt.push_str(&opt.error.to_string());
-    prompt.push(']');
+    prompt.push_str(&render_last_error_code(opt.error));
     prompt.push(' ');
     prompt.push_str(&get_utc_time());
     prompt.push_str(" ");

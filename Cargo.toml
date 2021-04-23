@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 hostname = "0.3"
 anyhow = "1.0"
+chrono = { version = "0.4", features = ["unstable-locales"] }
 
 [profile.release]
 codegen-units = 1

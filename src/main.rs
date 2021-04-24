@@ -1,6 +1,7 @@
 #![feature(pattern)]
 
 use chrono::prelude::*;
+use clap::{App, Arg};
 use std::{ffi::OsString, str::pattern::Pattern};
 
 const PROMPT_CAPACITY: usize = 256;
@@ -83,10 +84,22 @@ fn get_git_current_branch_from_libgit2() -> String {
 fn main() {
     // TODO: Refactor string operations
     // TODO: Refactor code to use anyhow::Result<>
-    // TODO: Refactor args parsing
-    // let start_time = std::time::Instant::now();
+    let start_time = std::time::Instant::now();
 
-    if std::env::args().nth(1).unwrap() == "--rprompt" {
+    let matches = App::new("prompt-rs")
+        .version("0.1")
+        .author("Wojciech Bartnik <yisonPylkita@gmail.com>")
+        .about("Generate ZSH PS1 and RPS1")
+        .arg(Arg::new("profile").long("profile").takes_value(false))
+        .arg(Arg::new("rprompt").long("rprompt").takes_value(false))
+        .arg(Arg::new("error").long("error").takes_value(true))
+        .get_matches();
+    if matches.is_present("profile") {
+        println!("Profiling mode not yet implemented!");
+        return;
+    }
+
+    if matches.is_present("rprompt") {
         print!("{}", &get_git_current_branch_from_libgit2());
         return;
     }
@@ -94,7 +107,7 @@ fn main() {
     let mut prompt = String::with_capacity(PROMPT_CAPACITY);
 
     // TODO: write more-proper args parsing. Beware of startup time
-    let error_code = std::env::args().nth(2).unwrap().parse::<i32>().unwrap();
+    let error_code = matches.value_of("error").unwrap().parse::<i32>().unwrap();
     if error_code != 0 {
         prompt.push_str(&with_color(
             error_code_to_string(error_code),
@@ -123,15 +136,15 @@ fn main() {
     // prompt.push_str(" | ");
     // prompt.push_str(&get_git_current_branch_from_libgit2());
     // prompt.push_str(" | > ");
-    prompt.push('\n');
+    // prompt.push('\n');
     prompt.push_str("> ");
-    // prompt.push_str(
-    //     &std::time::Instant::now()
-    //         .duration_since(start_time)
-    //         .as_micros()
-    //         .to_string(),
-    // );
-    // prompt.push_str("us");
+    prompt.push_str(
+        &std::time::Instant::now()
+            .duration_since(start_time)
+            .as_micros()
+            .to_string(),
+    );
+    prompt.push_str("us");
 
     print!("{}", prompt);
 }

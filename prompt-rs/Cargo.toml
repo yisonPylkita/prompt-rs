@@ -6,9 +6,7 @@ edition = "2018"
 
 [dependencies]
 hostname = "0.3"
-anyhow = "1.0"
 chrono = { version = "0.4", features = ["unstable-locales"] }
-structopt = { version = "0.3", default-features = false }
 # Default features in git2 are SSH and SSL and with them enabled repo handle
 # initialization takes 5 milliseconds. With them disabled it takes 100
 # microseconds. So unless I need them they shall stay disabled

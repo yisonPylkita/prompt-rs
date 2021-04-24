@@ -1,38 +1,38 @@
 use chrono::prelude::*;
 use std::ffi::OsString;
 
-use structopt::StructOpt;
-
-#[derive(Debug, StructOpt)]
-struct Opt {
-    #[structopt(long)]
-    error: i32,
-}
-
 const PROMPT_CAPACITY: usize = 256;
 
 type ShellColor = str;
-const SHELL_COLOR_RED: &ShellColor = "\\033[0;31m";
-const SHELL_COLOR_GREEN: &ShellColor = "\\033[01;32m";
-const SHELL_COLOR_RESTORE: &ShellColor = "\\033[0m";
+const SHELL_COLOR_RED: &ShellColor = "{red}";
+const SHELL_COLOR_GREEN: &ShellColor = "{green}";
 
-fn with_color(input: String, color: &ShellColor) -> String {
-    let mut result = color.to_string();
+enum ShellColorStyle {
+    Bg,
+    Fg,
+}
+
+fn with_color(input: String, color: &ShellColor, style: &ShellColorStyle) -> String {
+    let mut result = match style {
+        ShellColorStyle::Bg => "%K".to_string(),
+        ShellColorStyle::Fg => "%F".to_string(),
+    };
+    result.push_str(&color.to_string());
     result.push_str(input.as_str());
-    result.push_str(SHELL_COLOR_RESTORE);
+    match style {
+        ShellColorStyle::Bg => result.push_str("%k"),
+        ShellColorStyle::Fg => result.push_str("%f"),
+    };
     result
 }
 
 fn render_last_error_code(error_code: i32) -> String {
     let mut result = String::new();
-    if error_code != 0 {
-        result.push_str("%K{red}");
-    }
     result.push('[');
     result.push_str(&error_code.to_string());
     result.push(']');
     if error_code != 0 {
-        result.push_str("%k");
+        result = with_color(result, SHELL_COLOR_RED, &ShellColorStyle::Bg);
     }
 
     result
@@ -55,7 +55,7 @@ fn get_current_working_directory_path() -> String {
 }
 
 fn get_git_current_branch_from_libgit2() -> String {
-    git2::Repository::open(".")
+    git2::Repository::open_bare("./.git")
         .unwrap()
         .head()
         .unwrap()
@@ -64,56 +64,35 @@ fn get_git_current_branch_from_libgit2() -> String {
         .to_string()
 }
 
-fn get_git_current_branch_from_git_process() -> String {
-    std::str::from_utf8(
-        &std::process::Command::new("/usr/bin/git")
-            .arg("branch")
-            .arg("--show-current")
-            .output()
-            .unwrap()
-            .stdout,
-    )
-    .unwrap()
-    .to_string()
-}
-
 fn main() {
-    /// libgit2 test
+    // TODO: Refactor string operations
+    // TODO: Refactor code to use anyhow::Result<>
     let start_time = std::time::Instant::now();
-    let _ = get_git_current_branch_from_libgit2();
-    println!(
-        "git branch --show-current equivalent in libgit2 took {}us",
-        std::time::Instant::now()
-            .duration_since(start_time)
-            .as_micros()
-    );
-
-    /// git process test
-    let start_time = std::time::Instant::now();
-    let _ = get_git_current_branch_from_git_process();
-    println!(
-        "git branch --show-current as new process took {}us",
-        std::time::Instant::now()
-            .duration_since(start_time)
-            .as_micros()
-    );
-
-    let opt = Opt::from_args();
 
     let mut prompt = String::with_capacity(PROMPT_CAPACITY);
-    prompt.push_str(&render_last_error_code(opt.error));
+    // TODO: write more-proper args parsing. Beware of startup time
+    let error_code = std::env::args().nth(2).unwrap().parse::<i32>().unwrap();
+    prompt.push_str(&render_last_error_code(error_code));
     prompt.push(' ');
     prompt.push_str(&get_utc_time());
     prompt.push_str(" ");
     prompt.push_str(&with_color(
-        get_hostname().to_str().unwrap().to_string(), // TODO: Refactor this
+        get_hostname().to_str().unwrap().to_string(),
         SHELL_COLOR_GREEN,
+        &ShellColorStyle::Fg,
     ));
     prompt.push_str(" ");
     prompt.push_str(&get_current_working_directory_path());
     prompt.push_str(" | ");
     prompt.push_str(&get_git_current_branch_from_libgit2());
     prompt.push_str(" | > ");
+    prompt.push_str(
+        &std::time::Instant::now()
+            .duration_since(start_time)
+            .as_micros()
+            .to_string(),
+    );
+    prompt.push_str("us");
 
     print!("{}", prompt);
 }

@@ -1,16 +1,14 @@
 #![feature(pattern)]
 
 use chrono::prelude::*;
-use std::{
-    ffi::OsString,
-    str::{pattern::Pattern, FromStr},
-};
+use std::{ffi::OsString, str::pattern::Pattern};
 
 const PROMPT_CAPACITY: usize = 256;
 
 type ShellColor = str;
 const SHELL_COLOR_RED: &ShellColor = "{red}";
 const SHELL_COLOR_GREEN: &ShellColor = "{green}";
+const SHELL_COLOR_MAGENTA: &ShellColor = "{magenta}";
 
 enum ShellColorStyle {
     Bg,
@@ -31,15 +29,11 @@ fn with_color(input: String, color: &ShellColor, style: &ShellColorStyle) -> Str
     result
 }
 
-fn render_last_error_code(error_code: i32) -> String {
+fn error_code_to_string(error_code: i32) -> String {
     let mut result = String::new();
     result.push('[');
     result.push_str(&error_code.to_string());
     result.push(']');
-    if error_code != 0 {
-        result = with_color(result, SHELL_COLOR_RED, &ShellColorStyle::Bg);
-    }
-
     result
 }
 
@@ -89,34 +83,54 @@ fn get_git_current_branch_from_libgit2() -> String {
 fn main() {
     // TODO: Refactor string operations
     // TODO: Refactor code to use anyhow::Result<>
-    let start_time = std::time::Instant::now();
+    // let start_time = std::time::Instant::now();
+
+    if std::env::args().nth(1).unwrap() == "--rprompt" {
+        print!("{}", &get_git_current_branch_from_libgit2());
+        return;
+    }
 
     let mut prompt = String::with_capacity(PROMPT_CAPACITY);
+
     // TODO: write more-proper args parsing. Beware of startup time
     let error_code = std::env::args().nth(2).unwrap().parse::<i32>().unwrap();
-    prompt.push_str(&render_last_error_code(error_code));
-    prompt.push(' ');
+    if error_code != 0 {
+        prompt.push_str(&with_color(
+            error_code_to_string(error_code),
+            SHELL_COLOR_RED,
+            &ShellColorStyle::Bg,
+        ));
+        prompt.push(' ');
+    }
+
     prompt.push_str(&get_utc_time());
     prompt.push(' ');
-    prompt.push_str(&get_username());
+    prompt.push_str(&with_color(
+        get_username(),
+        SHELL_COLOR_GREEN,
+        &ShellColorStyle::Fg,
+    ));
     prompt.push('@');
     prompt.push_str(&with_color(
         get_hostname().to_str().unwrap().to_string(),
-        SHELL_COLOR_GREEN,
+        SHELL_COLOR_MAGENTA,
         &ShellColorStyle::Fg,
     ));
     prompt.push(':');
     prompt.push_str(&get_current_working_directory_path());
-    prompt.push_str(" | ");
-    prompt.push_str(&get_git_current_branch_from_libgit2());
-    prompt.push_str(" | > ");
-    prompt.push_str(
-        &std::time::Instant::now()
-            .duration_since(start_time)
-            .as_micros()
-            .to_string(),
-    );
-    prompt.push_str("us");
+    // TODO: moved git info to RPATH
+    // prompt.push_str(" | ");
+    // prompt.push_str(&get_git_current_branch_from_libgit2());
+    // prompt.push_str(" | > ");
+    prompt.push('\n');
+    prompt.push_str("> ");
+    // prompt.push_str(
+    //     &std::time::Instant::now()
+    //         .duration_since(start_time)
+    //         .as_micros()
+    //         .to_string(),
+    // );
+    // prompt.push_str("us");
 
     print!("{}", prompt);
 }

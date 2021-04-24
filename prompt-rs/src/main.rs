@@ -1,5 +1,10 @@
+#![feature(pattern)]
+
 use chrono::prelude::*;
-use std::ffi::OsString;
+use std::{
+    ffi::OsString,
+    str::{pattern::Pattern, FromStr},
+};
 
 const PROMPT_CAPACITY: usize = 256;
 
@@ -42,20 +47,37 @@ fn get_utc_time() -> String {
     Local::now().format("%H:%M:%S").to_string()
 }
 
+fn get_username() -> String {
+    whoami::username()
+}
+
 fn get_hostname() -> OsString {
     hostname::get().unwrap()
 }
 
 fn get_current_working_directory_path() -> String {
-    std::env::current_dir()
+    let working_dir = std::env::current_dir()
         .unwrap()
         .to_str()
         .unwrap()
-        .to_string()
+        .to_string();
+    let home_dir = dirs::home_dir().unwrap().to_str().unwrap().to_string();
+    if home_dir.is_prefix_of(working_dir.as_str()) {
+        let mut pretty_path = "~/".to_string();
+        let sub_path: String = working_dir.chars().skip(home_dir.len() + 1).collect();
+        pretty_path.push_str(&sub_path);
+        return pretty_path;
+    }
+
+    working_dir
 }
 
 fn get_git_current_branch_from_libgit2() -> String {
-    git2::Repository::open_bare("./.git")
+    let repo_handle = git2::Repository::open_bare("./.git");
+    if repo_handle.is_err() {
+        return "".to_string();
+    }
+    repo_handle
         .unwrap()
         .head()
         .unwrap()
@@ -75,13 +97,15 @@ fn main() {
     prompt.push_str(&render_last_error_code(error_code));
     prompt.push(' ');
     prompt.push_str(&get_utc_time());
-    prompt.push_str(" ");
+    prompt.push(' ');
+    prompt.push_str(&get_username());
+    prompt.push('@');
     prompt.push_str(&with_color(
         get_hostname().to_str().unwrap().to_string(),
         SHELL_COLOR_GREEN,
         &ShellColorStyle::Fg,
     ));
-    prompt.push_str(" ");
+    prompt.push(':');
     prompt.push_str(&get_current_working_directory_path());
     prompt.push_str(" | ");
     prompt.push_str(&get_git_current_branch_from_libgit2());

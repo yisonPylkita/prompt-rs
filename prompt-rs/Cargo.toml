@@ -11,6 +11,8 @@ chrono = { version = "0.4", features = ["unstable-locales"] }
 # initialization takes 5 milliseconds. With them disabled it takes 100
 # microseconds. So unless I need them they shall stay disabled
 git2 = { version = "0.13", default-features = false }
+whoami = "1.1"
+dirs = "3.0"
 
 [profile.release]
 codegen-units = 1

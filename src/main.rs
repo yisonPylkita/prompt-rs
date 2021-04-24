@@ -83,6 +83,7 @@ fn get_git_current_branch_from_libgit2() -> String {
 fn main() {
     // TODO: Refactor string operations
     // TODO: Refactor code to use anyhow::Result<>
+    // TODO: Refactor args parsing
     // let start_time = std::time::Instant::now();
 
     if std::env::args().nth(1).unwrap() == "--rprompt" {
